@@ -11,19 +11,21 @@ if (!cached) cached = (global as any).mongoose = { conn: null, promise: null };
 
 
 export async function connectDB() {
-  let isConnected = false;
-
-  if (cached.conn) return cached.conn;
+  if (cached.conn) {
+    console.log("MongoDB is already connected");
+    return cached.conn;
+  }
 
   if (!cached.promise) {
     cached.promise = mongoose.connect(MONGODB_URI).then((mongoose) => mongoose);
   }
-  isConnected = true;
   
-  if (isConnected === true){
-    console.log("✅ MongoDB connected");
-
+  try {
+    cached.conn = await cached.promise;
+    console.log("MongoDB connected");
+    return cached.conn;
+  } catch (error) {
+    cached.promise = null; 
+    throw error;
   }
-  cached.conn = await cached.promise;
-  return cached.conn;
 }
