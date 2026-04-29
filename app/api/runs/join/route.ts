@@ -12,7 +12,7 @@ export async function POST(req: Request, { params }: any) {
   if (!run) return NextResponse.json({ error: "Run not found" }, { status: 404 });
 
   const count = await Join.countDocuments({ runId: run._id, status: "going" });
-  if (count >= run.maxPlayers) return NextResponse.json({ error: "Run is full" }, { status: 400 });
+  if (count >= run.numOfPlayers) return NextResponse.json({ error: "Run is full" }, { status: 400 });
 
   const join = await Join.create({ runId: run._id, userId, name });
 
