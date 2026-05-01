@@ -6,11 +6,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { MapPin, Users, Clock, ArrowRight, Activity } from "lucide-react";
+import { ArrowRight, Activity } from "lucide-react";
 import { toast } from "sonner";
+import { signupUser } from "@/lib/api/users";
 
 const Index = () => {
   const [code, setCode] = useState("");
+  const [signupName, setSignupName] = useState("");
+  const [signupEmail, setSignupEmail] = useState("");
+  const [signupPassword, setSignupPassword] = useState("");
+  const [isSigningUp, setIsSigningUp] = useState(false);
 
   const handleQuickJoin = () => {
     if (!code.trim()) {
@@ -18,6 +23,37 @@ const Index = () => {
       return;
     }
     toast.success(`Joining run ${code.toUpperCase()}...`);
+  };
+
+  const handleSignup = async () => {
+    if (!signupName.trim() || !signupEmail.trim() || !signupPassword.trim()) {
+      toast.error("Fill out name, email, and password");
+      return;
+    }
+
+    try {
+      setIsSigningUp(true);
+
+      const { ok, data } = await signupUser({
+        name: signupName,
+        email: signupEmail,
+        password: signupPassword,
+      });
+
+      if (!ok) {
+        toast.error("error" in data && data.error ? data.error : "Signup failed");
+        return;
+      }
+
+      toast.success("Welcome to SetPH! Time to ball.");
+      setSignupName("");
+      setSignupEmail("");
+      setSignupPassword("");
+    } catch {
+      toast.error("Signup failed");
+    } finally {
+      setIsSigningUp(false);
+    }
   };
 
   return (
@@ -50,7 +86,7 @@ const Index = () => {
           </h1>
 
           <p className="text-lg md:text-xl text-muted-foreground max-w-lg leading-relaxed">
-            Find open pickup games near you, host your own run, or jump straight into a friend's game with a code. No more group chat chaos — just hoops.
+            Find open pickup games near you, host your own run, or jump straight into a friend&apos;s game with a code. No more group chat chaos — just hoops.
           </p>
 
   
@@ -99,21 +135,42 @@ const Index = () => {
               <TabsContent value="signup" className="space-y-4 mt-6">
                 <div className="space-y-2">
                   <Label htmlFor="username" className="text-secondary font-semibold">Hooper Name</Label>
-                  <Input id="username" placeholder="kobe24" className="h-11" />
+                  <Input
+                    id="name"
+                    placeholder="kobe24"
+                    className="h-11"
+                    value={signupName}
+                    onChange={(e) => setSignupName(e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email-up" className="text-secondary font-semibold">Email</Label>
-                  <Input id="email-up" type="email" placeholder="you@setph.com" className="h-11" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="you@setph.com"
+                    className="h-11"
+                    value={signupEmail}
+                    onChange={(e) => setSignupEmail(e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="pw-up" className="text-secondary font-semibold">Password</Label>
-                  <Input id="pw-up" type="password" placeholder="••••••••" className="h-11" />
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    className="h-11"
+                    value={signupPassword}
+                    onChange={(e) => setSignupPassword(e.target.value)}
+                  />
                 </div>
                 <Button
-                  onClick={() => toast.success("Welcome to SetPH! Time to ball.")}
+                  onClick={handleSignup}
+                  disabled={isSigningUp}
                   className="w-full h-12 bg-gradient-hero hover:opacity-90 text-primary-foreground font-bold text-base shadow-glow"
                 >
-                  Create Account
+                  {isSigningUp ? "Creating account..." : "Create your account!"}
                 </Button>
               </TabsContent>
 
