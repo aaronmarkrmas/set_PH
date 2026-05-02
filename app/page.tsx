@@ -58,9 +58,8 @@ const Index = () => {
         });
 
         if (userResponse.ok) {
-          const user = await userResponse.json();
-          localStorage.setItem("userName", user.name);
-        }
+            const user = await userResponse.json();
+          }
       } catch (error) {
         console.error("Failed to fetch user data:", error);
       }

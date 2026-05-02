@@ -51,16 +51,13 @@ export default function Dashboard (){
       .then((data) => {
         if (data) {
           setUser(data);
+          setIsLoading(false);
         } else {
-          const storedName = localStorage.getItem("userName") || "Hooper";
-          setUser({ name: storedName, email: "user@setph.com", username: "user" });
+          router.replace("/");
         }
-        setIsLoading(false);
       })
       .catch(() => {
-        const storedName = localStorage.getItem("userName") || "Hooper";
-        setUser({ name: storedName, email: "user@setph.com", username: "user" });
-        setIsLoading(false);
+        router.replace("/");
       });
   }, [router]);
   
@@ -84,7 +81,6 @@ export default function Dashboard (){
     } catch {
       // ignore
     }
-    localStorage.removeItem("userName");
     toast.success("Logged out");
     router.replace("/");
   };
