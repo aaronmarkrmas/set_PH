@@ -9,13 +9,19 @@ import { Card } from "@/components/ui/card";
 import { ArrowRight, Activity } from "lucide-react";
 import { toast } from "sonner";
 import { signupUser } from "@/lib/api/users";
+import { signinUser } from "@/lib/api/users";
+import { useRouter } from "next/navigation";
 
 const Index = () => {
   const [code, setCode] = useState("");
   const [signupName, setSignupName] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
+  const [signinEmail, setSigninEmail] = useState("");
+  const [signinPassword, setSigninPassword] = useState("");
   const [isSigningUp, setIsSigningUp] = useState(false);
+  const [isSigningIn, setIsSigningIn] = useState(false);
+  const router = useRouter();
 
   const handleQuickJoin = () => {
     if (!code.trim()) {
@@ -24,6 +30,51 @@ const Index = () => {
     }
     toast.success(`Joining run ${code.toUpperCase()}...`);
   };
+
+  const handleSignIn = async () => {
+
+    if (!signinEmail.trim() || !signinPassword.trim()) {
+      toast.error("Enter your email and password");
+      return;
+    }
+
+    try {
+      setIsSigningIn(true);
+
+      const { ok, data } = await signinUser({
+        email: signinEmail,
+        password: signinPassword,
+      });
+
+      if (!ok) {
+        toast.error("error" in data && data.error ? data.error : "Sign in failed");
+        return;
+      }
+
+      // Server set an httpOnly cookie; fetch user data via cookie
+      try {
+        const userResponse = await fetch("/api/users/me", {
+          credentials: "same-origin",
+        });
+
+        if (userResponse.ok) {
+          const user = await userResponse.json();
+          localStorage.setItem("userName", user.name);
+        }
+      } catch (error) {
+        console.error("Failed to fetch user data:", error);
+      }
+
+      toast.success("Welcome back, hooper!");
+      setSigninEmail("");
+      router.replace("/dashboard");
+    } catch {
+      toast.error("Sign in failed");
+    } finally {
+      setIsSigningIn(false);
+    }
+  };
+
 
   const handleSignup = async () => {
     if (!signupName.trim() || !signupEmail.trim() || !signupPassword.trim()) {
@@ -177,17 +228,32 @@ const Index = () => {
               <TabsContent value="signin" className="space-y-4 mt-6">
                 <div className="space-y-2">
                   <Label htmlFor="email-in" className="text-secondary font-semibold">Email</Label>
-                  <Input id="email-in" type="email" placeholder="you@setph.com" className="h-11" />
+                  <Input
+                    id="email-in"
+                    type="email"
+                    placeholder="you@setph.com"
+                    className="h-11"
+                    value={signinEmail}
+                    onChange={(e) => setSigninEmail(e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="pw-in" className="text-secondary font-semibold">Password</Label>
-                  <Input id="pw-in" type="password" placeholder="••••••••" className="h-11" />
+                  <Input
+                    id="pw-in"
+                    type="password" 
+                    placeholder="••••••••"
+                    className="h-11"
+                    value={signinPassword}
+                    onChange={(e) => setSigninPassword(e.target.value)}
+                  />
                 </div>
                 <Button
-                  onClick={() => toast.success("Welcome back, hooper!")}
+                  onClick={handleSignIn}
+                  disabled={isSigningIn}
                   className="w-full h-12 bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold text-base"
                 >
-                  Sign In
+                  {isSigningIn ? "Signing in..." : "Sign In"}
                 </Button>
               </TabsContent>
             </Tabs>

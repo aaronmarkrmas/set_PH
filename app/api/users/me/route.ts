@@ -1,29 +1,25 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/models/user";
-import jwt from "jsonwebtoken";
+import { getTokenFromRequest, verifyToken, unauthorized } from "@/lib/auth";
 
 export async function GET(req: Request) {
   try {
     await connectDB();
 
-    const authHeader = req.headers.get("authorization");
+    const token = getTokenFromRequest(req);
 
-    if (!authHeader) {
-      return NextResponse.json(
-        { error: "No token provided" },
-        { status: 401 }
-      );
+    if (!token) {
+      return unauthorized();
     }
 
-    const token = authHeader.split(" ")[1];
+    const { valid, decoded } = verifyToken(token);
 
-    const decoded: any = jwt.verify(
-      token,
-      process.env.JWT_SECRET!
-    );
+    if (!valid) {
+      return unauthorized();
+    }
 
-    const user = await User.findById(decoded.userId).select("-password");
+    const user = await User.findById((decoded as any).userId).select("-password");
 
     if (!user) {
       return NextResponse.json(
@@ -35,9 +31,6 @@ export async function GET(req: Request) {
     return NextResponse.json(user);
 
   } catch (error) {
-    return NextResponse.json(
-      { error: "Invalid token" },
-      { status: 401 }
-    );
+    return unauthorized();
   }
 } 
