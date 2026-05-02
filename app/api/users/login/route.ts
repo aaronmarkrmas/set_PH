@@ -28,13 +28,19 @@ export async function POST(req: Request) {
       );
     }
 
-    const token = jwt.sign(
-      { userId: user._id },
-      process.env.JWT_SECRET!,
-      { expiresIn: "7d" }
-    );
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET!, { expiresIn: "3h" });
 
-    return NextResponse.json({ token });
+    // Set token as an httpOnly cookie and return success (no token in JSON)
+    const res = NextResponse.json({ ok: true });
+    res.cookies.set("authToken", token, {
+      httpOnly: true,
+      maxAge: 60 * 60 * 3,
+      path: "/",
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+    });
+
+    return res;
   } catch (error) {
     return NextResponse.json(
       { error: "Login failed" },
