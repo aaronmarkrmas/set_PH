@@ -2,6 +2,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { View } from "@/app/types/dashboard";
 import { Activity, MapPin, Clock, Users, ArrowRight } from "lucide-react";
+import CreateRun from "@/app/dashboard/create-run/page";
+import { useRouter } from "next/navigation";
 
 interface HomeViewProps {
   setView: (view: View) => void;
@@ -9,6 +11,7 @@ interface HomeViewProps {
 
 export default function HomeView({ setView }: HomeViewProps) {
   const currentRun = null; // set to an object to preview the "active" state
+  const router = useRouter();
 
   return (
     <>
@@ -64,7 +67,7 @@ export default function HomeView({ setView }: HomeViewProps) {
               <Button
                 variant="outline"
                 className="border-2 border-secondary/30 text-secondary font-bold hover:bg-secondary hover:text-secondary-foreground"
-                onClick={() => setView("create-run")}
+                onClick={() => router.push("/dashboard/create-run")}
               >
                 Host a Game
               </Button>

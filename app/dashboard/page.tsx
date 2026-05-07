@@ -1,25 +1,35 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useDashboardUser } from "../hooks/useDashboardUser";
 import type { View } from "@/app/types/dashboard";
 import Sidebar from "@/components/dashboard/sidebar";
 import Topbar from "@/components/dashboard/topbar";
 import HomeView from "@/components/dashboard/homeButton";
 import ProfileView from "@/components/dashboard/profile";
-import CreateRunView from "@/components/dashboard/createRun";
 import PastRunsView from "@/components/dashboard/pastRuns";
 import LoadingScreen from "@/components/dashboard/loadingScreen";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function Dashboard() {
+  const router = useRouter();
   const { user, loading } = useDashboardUser();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [view, setView] = useState<View>("home");
   
   if (loading) return <LoadingScreen />;
   if (!user) return null;
+
+  const handleSetView = (newView: View) => {
+    if (newView === "create-run") {
+      router.push("/dashboard/create-run");
+    } else {
+      setView(newView);
+    }
+    setSidebarOpen(false);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-soft relative overflow-hidden">
@@ -37,10 +47,7 @@ export default function Dashboard() {
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >
-          <Sidebar view={view} setView={(newView) => {
-            setView(newView);
-            setSidebarOpen(false);
-          }} onClose={() => setSidebarOpen(false)} />
+          <Sidebar view={view} setView={handleSetView} onClose={() => setSidebarOpen(false)} />
         </aside>
 
         {/* Backdrop on mobile */}
@@ -69,9 +76,8 @@ export default function Dashboard() {
 
           {/* Content */}
           <main className="flex-1 p-4 md:p-8 space-y-6">
-            {view === "home" && <HomeView setView={setView} />}
+            {view === "home" && <HomeView setView={handleSetView} />}
             {view === "profile" && <ProfileView user={user} />}
-            {view === "create-run" && <CreateRunView user={user} />}
             {view === "past-runs" && <PastRunsView />}
           </main>
         </div>

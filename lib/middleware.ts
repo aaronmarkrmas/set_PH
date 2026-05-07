@@ -6,8 +6,8 @@ export function middleware(request: NextRequest) {
 
   // Check if user is authenticated
   if (!token) {
-    // Optional: redirect to signin for protected routes
-    return NextResponse.next();
+    // Redirect to login for protected routes
+    return NextResponse.redirect(new URL("/api/users/login", request.url));
   }
 
   // Verify token
@@ -24,5 +24,5 @@ export function middleware(request: NextRequest) {
 
 // Specify which routes need authentication
 export const config = {
-    matcher: ["/dashboard/:path*"],
+    matcher: ["/dashboard/:path*", "/dashboard/create-run/:path*"]
 };
