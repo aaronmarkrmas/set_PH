@@ -2,6 +2,7 @@ export type View =
   | "home"
   | "create-run"
   | "profile"
+  | "join-run"
   | "past-runs";
 
 export type DashboardUser = {

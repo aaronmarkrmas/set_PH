@@ -1,4 +1,4 @@
-import { Activity, User, History, PlusCircle, LogOut, X } from "lucide-react";
+import { Activity, User, History, PlusCircle, LogOut, X, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { View } from "@/app/types/dashboard";
 import { useRouter } from "next/navigation";
@@ -13,6 +13,7 @@ interface SidebarItem {
 const items: SidebarItem[] = [
   { id: "home", label: "Home", icon: Activity },
   { id: "create-run", label: "Create Run", icon: PlusCircle },
+  { id: "join-run", label: "Join Run", icon: Users },
   { id: "profile", label: "Profile", icon: User },
   { id: "past-runs", label: "Past Runs", icon: History },
 ];
