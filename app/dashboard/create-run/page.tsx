@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useDashboardUser } from "@/app/hooks/useDashboardUser";
+import { useCreateRun } from "@/app/hooks/useCreateRun";
 import LoadingScreen from "@/components/dashboard/loadingScreen";
 
 import {
@@ -42,6 +43,7 @@ const generateJoinCode = () =>
 
 const CreateRun = () => {
   const router = useRouter();
+  const { createRun, submitting } = useCreateRun();
 
   const [title, setTitle] = useState("");
   const [location, setLocation] = useState("");
@@ -50,13 +52,13 @@ const CreateRun = () => {
   const [numOfPlayers, setNumOfPlayers] = useState<string>("");
   const [status, setStatus] = useState<RunStatus>("open");
   const [joinCode, setJoinCode] = useState(generateJoinCode());
-  const [submitting, setSubmitting] = useState(false);
   const { user, loading } = useDashboardUser();
 
   if (loading) return <LoadingScreen />;
   if (!user) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!title.trim() || !location.trim() || !date) {
@@ -78,18 +80,17 @@ const CreateRun = () => {
       numOfPlayers: numOfPlayers ? Number(numOfPlayers) : undefined,
       joinCode,
       status,
-      // hostId — wired up by backend from session
+      hostId: user._id,
     };
 
-    setSubmitting(true);
-    console.log("Create Run payload:", payload);
-    toast.success("Run created!", {
-      description: `Join code: ${joinCode}`,
-    });
-    setTimeout(() => {
-      setSubmitting(false);
-      router.push("/dashboard");
-    }, 600);
+    try {
+      await createRun(payload);
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 600);
+    } catch (error) {
+      // Error is already handled by the hook
+    }
   };
 
   return (
