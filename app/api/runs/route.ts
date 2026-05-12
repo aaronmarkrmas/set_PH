@@ -15,7 +15,8 @@ export async function POST(req: Request) {
       date: body.date,
       numOfPlayers: body.numOfPlayers,
       hostId: body.hostId,
-      joinCode: nanoid(6)
+      joinCode: nanoid(6),
+      participants: [body.hostId]  // Add host as first participant
     });
 
     return NextResponse.json(run);
@@ -24,11 +25,15 @@ export async function POST(req: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     await connectDB();
-
-    const runs = await Run.find().sort({ date: 1 });
+    
+    const { searchParams } = new URL(req.url);
+    const status = searchParams.get("status");
+    
+    const query = status ? { status } : {};
+    const runs = await Run.find(query).sort({ date: 1 });
 
     return NextResponse.json(runs);
   } catch (error) {

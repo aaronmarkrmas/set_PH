@@ -8,6 +8,7 @@ const RunSchema = new mongoose.Schema({
   hostId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   joinCode: { type: String, unique: true, required: true },
   status: { type: String, enum: ["open", "full", "cancelled", "completed"], default: "open" },
+  participants: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
 }, { timestamps: true });
 
 export default mongoose.models.Run || mongoose.model("Run", RunSchema);

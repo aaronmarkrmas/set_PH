@@ -18,7 +18,7 @@ export default function PastRunsView() {
   useEffect(() => {
     const fetchRuns = async () => {
       try {
-        const response = await fetch("/api/runs");
+        const response = await fetch("/api/runs?status=completed");
         if (!response.ok) throw new Error("Failed to fetch runs");
         const data = await response.json();
         setRuns(data);

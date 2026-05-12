@@ -89,7 +89,6 @@ const CreateRun = () => {
         router.push("/dashboard");
       }, 600);
     } catch (error) {
-      // Error is already handled by the hook
     }
   };
 
