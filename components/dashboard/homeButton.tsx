@@ -69,10 +69,18 @@ export default function HomeView({ setView }: HomeViewProps) {
                   </div>
                   <div className="flex-1 flex flex-col gap-0">
                     <div className="space-y-0">
-                      <p className="text-xs font-bold uppercase tracking-wider text-secondary/70">
+                      <p className="text-xs font-bold uppercase tracking-wider text-black">
                         Participants ({run?.participants?.length || 0})
                       </p>
-                      <div className="space-y-1">
+                      <div 
+                        className="space-y-1"
+                        style={{
+                          display: 'grid',
+                          gridTemplateRows: 'repeat(6, minmax(auto, 1fr))',
+                          gridAutoFlow: 'column',
+                          gap: '0.25rem'
+                        }}
+                      >
                         {run?.participants && run.participants.length > 0 ? (
                           run.participants.map((participant: any, idx: number) => (
                             <p key={idx} className="text-sm text-muted-foreground">

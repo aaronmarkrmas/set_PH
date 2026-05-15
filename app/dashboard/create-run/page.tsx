@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { useDashboardUser } from "@/app/hooks/useDashboardUser";
 import { useCreateRun } from "@/app/hooks/useCreateRun";
 import { useInvitedPlayers } from "@/app/hooks/useInvitedPlayers";
+import { usePlayerNavigation } from "@/app/hooks/usePlayerNavigation";
 import { addRunParticipants } from "@/app/services/runService";
 import LoadingScreen from "@/components/dashboard/loadingScreen";
 
@@ -56,6 +57,7 @@ const CreateRun = () => {
   const [joinCode, setJoinCode] = useState(generateJoinCode());
   const { user, loading } = useDashboardUser();
   const { invitedPlayers, updateInvitedPlayer, filledCount, maxPlayers, availableSlots } = useInvitedPlayers(numOfPlayers);
+  const { playerRefs, handlePlayerKeyDown } = usePlayerNavigation(invitedPlayers.length);
 
   if (loading) return <LoadingScreen />;
   if (!user) return null;
@@ -266,7 +268,7 @@ const CreateRun = () => {
                 </div>
               </div>
 
-              {/* Invite Players */}
+              {/* Add Players */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <Label className="text-secondary font-bold">
@@ -302,9 +304,13 @@ const CreateRun = () => {
                             {i + 2}
                           </span>
                         <Input
+                          ref={(el) => {
+                            playerRefs.current[i] = el;
+                          }}
                           placeholder={`Player ${i + 2} name or @handle`}
                           value={player}
                           onChange={(e) => updateInvitedPlayer(i, e.target.value)}
+                          onKeyDown={(e) => handlePlayerKeyDown(e, i)}
                           maxLength={60}
                           className="pl-10 border-2 border-border focus-visible:border-primary"
                         />
