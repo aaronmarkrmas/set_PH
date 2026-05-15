@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useDashboardUser } from "@/app/hooks/useDashboardUser";
 import { useCreateRun } from "@/app/hooks/useCreateRun";
+import { useInvitedPlayers } from "@/app/hooks/useInvitedPlayers";
+import { addRunParticipants } from "@/app/services/runService";
 import LoadingScreen from "@/components/dashboard/loadingScreen";
 
 import {
@@ -53,10 +55,10 @@ const CreateRun = () => {
   const [status, setStatus] = useState<RunStatus>("open");
   const [joinCode, setJoinCode] = useState(generateJoinCode());
   const { user, loading } = useDashboardUser();
+  const { invitedPlayers, updateInvitedPlayer, filledCount, maxPlayers, availableSlots } = useInvitedPlayers(numOfPlayers);
 
   if (loading) return <LoadingScreen />;
   if (!user) return null;
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,7 +86,12 @@ const CreateRun = () => {
     };
 
     try {
-      await createRun(payload);
+      const runResponse = await createRun(payload);
+      const runId = runResponse._id || runResponse.id;
+
+      // Add host and invited players as participants
+      await addRunParticipants(runId, user._id, user.name || "Host", invitedPlayers);
+
       setTimeout(() => {
         router.push("/dashboard");
       }, 600);
@@ -257,6 +264,55 @@ const CreateRun = () => {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+
+              {/* Invite Players */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <Label className="text-secondary font-bold">
+                    Invite Players
+                  </Label>
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase">
+                    <span className="rounded-full bg-primary/10 border border-primary/30 px-2.5 py-1 text-primary">
+                      1 / {numOfPlayers || 0} max
+                    </span>
+                    <span className="rounded-full bg-secondary/10 border border-secondary/30 px-2.5 py-1 text-secondary">
+                      {Math.max(0, (numOfPlayers ? Number(numOfPlayers) : 0) - 1)} open
+                    </span>
+                  </div>
+                </div>
+
+                {maxPlayers === 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    Set the number of players above to add invites.
+                  </p>
+                ) : (
+                  <>
+                    <div className="relative rounded-lg border-2 border-primary/50 bg-primary/5 p-3">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 grid place-items-center rounded-full bg-primary text-primary-foreground text-[10px] font-black">
+                        1
+                      </span>
+                      <p className="pl-10 text-sm font-semibold text-secondary">{user.name || "You (Host)"}</p>
+                      <p className="pl-10 text-xs text-muted-foreground">Host</p>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {invitedPlayers.map((player, i) => (
+                        <div key={i} className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 grid place-items-center rounded-full bg-primary/15 text-primary text-[10px] font-black">
+                            {i + 2}
+                          </span>
+                        <Input
+                          placeholder={`Player ${i + 2} name or @handle`}
+                          value={player}
+                          onChange={(e) => updateInvitedPlayer(i, e.target.value)}
+                          maxLength={60}
+                          className="pl-10 border-2 border-border focus-visible:border-primary"
+                        />
+                      </div>
+                    ))}
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Join code */}

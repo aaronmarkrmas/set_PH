@@ -76,7 +76,7 @@ export default function HomeView({ setView }: HomeViewProps) {
                         {run?.participants && run.participants.length > 0 ? (
                           run.participants.map((participant: any, idx: number) => (
                             <p key={idx} className="text-sm text-muted-foreground">
-                              {participant?.username || participant?.email || "Unknown"}
+                              {participant?.name || "Unknown"}
                             </p>
                           ))
                         ) : (
