@@ -25,6 +25,8 @@ export default function Dashboard() {
   const handleSetView = (newView: View) => {
     if (newView === "create-run") {
       router.push("/dashboard/create-run");
+    } else if (newView === "join-run") {
+      router.push("/dashboard/join-run");
     } else {
       setView(newView);
     }

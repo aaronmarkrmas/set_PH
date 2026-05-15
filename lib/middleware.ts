@@ -24,5 +24,5 @@ export function middleware(request: NextRequest) {
 
 // Specify which routes need authentication
 export const config = {
-    matcher: ["/dashboard/:path*", "/dashboard/create-run/:path*"]
+    matcher: ["/dashboard/:path*", "/dashboard/create-run/:path*", "/dashboard/join-run/:path*"]
 };
