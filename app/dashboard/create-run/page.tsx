@@ -41,8 +41,14 @@ import { toast } from "sonner";
 
 type RunStatus = "open" | "full" | "cancelled" | "completed";
 
-const generateJoinCode = () =>
-  Math.random().toString(36).slice(2, 8).toUpperCase();
+const generateJoinCode = () => {
+  const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let code = "";
+  for (let i = 0; i < 6; i++) {
+    code += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+  return code;
+};
 
 const CreateRun = () => {
   const router = useRouter();
@@ -54,7 +60,7 @@ const CreateRun = () => {
   const [time, setTime] = useState("");
   const [numOfPlayers, setNumOfPlayers] = useState<string>("");
   const [status, setStatus] = useState<RunStatus>("open");
-  const [joinCode, setJoinCode] = useState(generateJoinCode());
+  const [joinCode, setJoinCode] = useState<string>("");
   const { user, loading } = useDashboardUser();
   const { invitedPlayers, updateInvitedPlayer, filledCount, maxPlayers, availableSlots } = useInvitedPlayers(numOfPlayers);
   const { playerRefs, handlePlayerKeyDown } = usePlayerNavigation(invitedPlayers.length);
@@ -82,7 +88,7 @@ const CreateRun = () => {
       location: location.trim(),
       date: finalDate.toISOString(),
       numOfPlayers: numOfPlayers ? Number(numOfPlayers) : undefined,
-      joinCode,
+      joinCode: joinCode || generateJoinCode(),
       status,
       hostId: user._id,
     };

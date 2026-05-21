@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDashboardUser } from "@/app/hooks/useDashboardUser";
+import { JoinRunConfirmationModal } from "@/components/dashboard/joinRunConfirmationModal";
 import LoadingScreen from "@/components/dashboard/loadingScreen";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -14,14 +15,11 @@ import {
   Hash,
   ArrowLeft,
   Sparkles,
-  MapPin,
-  CalendarIcon,
-  Users,
-  CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
 
 type FoundRun = {
+  id: string;
   title: string;
   location: string;
   date: string;
@@ -29,6 +27,7 @@ type FoundRun = {
   joinedCount: number;
   status: "open" | "full" | "cancelled" | "completed";
   hostName: string;
+  hostId: string;
 };
 
 const JoinRun = () => {
@@ -38,14 +37,15 @@ const JoinRun = () => {
   const [searching, setSearching] = useState(false);
   const [joining, setJoining] = useState(false);
   const [foundRun, setFoundRun] = useState<FoundRun | null>(null);
+  const [showModal, setShowModal] = useState(false);
   const { user, loading } = useDashboardUser();
 
   // Stub user — backend will replace this with the session user
   if (loading) return <LoadingScreen />;
   if (!user) return null;
-  const currentUser = { name: user.name };
+  const currentUser = { id: user._id, name: user.name };
 
-  const handleFind = (e: React.FormEvent) => {
+  const handleFind = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!joinCode.trim()) {
       toast.error("Enter a join code first.");
@@ -55,40 +55,110 @@ const JoinRun = () => {
     setSearching(true);
     console.log("Lookup join code:", joinCode.trim().toUpperCase());
 
-    // Mock lookup — backend will replace this
-    setTimeout(() => {
+    try {
+      // Call the runs endpoint to find the run by join code
+      const response = await fetch(`/api/runs?joinCode=${joinCode.trim().toUpperCase()}`);
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          toast.error("Run not found", {
+            description: "Please check the join code and try again.",
+          });
+        } else {
+          toast.error("Failed to find run");
+        }
+        setSearching(false);
+        return;
+      }
+
+      const data = await response.json();
+      
+      // API returns an array, get the first item
+      const run = Array.isArray(data) ? data[0] : data;
+      
+      if (!run) {
+        toast.error("Run not found", {
+          description: "Please check the join code and try again.",
+        });
+        setSearching(false);
+        return;
+      }
+      
       setFoundRun({
-        title: "Sunday Morning Run",
-        location: "Moro Lorenzo Gym",
-        date: new Date(Date.now() + 86400000).toISOString(),
-        numOfPlayers: 10,
-        joinedCount: 6,
-        status: "open",
-        hostName: "Coach Mike",
+        id: run._id,
+        title: run.title,
+        location: run.location,
+        date: run.date,
+        numOfPlayers: run.numOfPlayers,
+        joinedCount: run.participants?.length || 0,
+        status: run.status,
+        hostName: run.hostName || "Unknown Host",
+        hostId: run.hostId,
       });
+      setShowModal(true);
+    } catch (error) {
+      console.error("Error finding run:", error);
+      toast.error("Failed to find run");
+    } finally {
       setSearching(false);
-    }, 500);
+    }
   };
 
-  const handleJoin = () => {
+  const handleJoin = async () => {
     if (!foundRun) return;
+    
     setJoining(true);
-    console.log("Join run payload:", {
-      joinCode: joinCode.trim().toUpperCase(),
-      // userId attached by backend from session
-    });
-    toast.success("You're in!", {
-      description: `Joined ${foundRun.title}`,
-    });
-    setTimeout(() => {
-      setJoining(false);
-      router.push("/dashboard");
-    }, 600);
-  };
+    
+    try {
+      const response = await fetch(`/api/runs/${foundRun.id}/join`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: currentUser.name,
+        }),
+      });
 
-  const slotsLeft = foundRun?.numOfPlayers
-    ? Math.max(0, foundRun.numOfPlayers - foundRun.joinedCount)
-    : null;
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (errorData.error === "User already joined") {
+          toast.error("User already joined", {
+            description: "You cannot join a run you created. You're already the host!",
+          });
+        } else if (errorData.error === "Run is full") {
+          toast.error("Run is full", {
+            description: "All spots are taken. Try another run.",
+          });
+        } else {
+          toast.error("Failed to join run", {
+            description: errorData.error || "Please try again.",
+          });
+        }
+        setJoining(false);
+        return;
+      }
+
+      toast.success("You're in!", {
+        description: `Successfully joined ${foundRun.title}`,
+      });
+
+      setShowModal(false);
+      setFoundRun(null);
+      setJoinCode("");
+
+      setTimeout(() => {
+        setJoining(false);
+        router.push("/dashboard");
+      }, 600);
+    } catch (error) {
+      console.error("Error joining run:", error);
+      toast.error("Failed to join run", {
+        description: "An unexpected error occurred.",
+      });
+      setJoining(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-soft relative overflow-hidden">
@@ -150,7 +220,6 @@ const JoinRun = () => {
                       value={joinCode}
                       onChange={(e) => {
                         setJoinCode(e.target.value.toUpperCase());
-                        setFoundRun(null);
                       }}
                       maxLength={12}
                       required
@@ -169,66 +238,6 @@ const JoinRun = () => {
                   Signed in as <span className="font-bold text-secondary">{currentUser.name}</span>
                 </p>
               </div>
-
-              {/* Found run preview */}
-              {foundRun && (
-                <div className="rounded-xl border-2 border-primary/30 bg-primary/5 p-5 space-y-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h3 className="text-lg font-black text-secondary">
-                        {foundRun.title}
-                      </h3>
-                      <p className="text-xs text-muted-foreground font-semibold uppercase">
-                        Hosted by {foundRun.hostName}
-                      </p>
-                    </div>
-                    <span className="rounded-full bg-primary/15 border border-primary/30 px-2.5 py-1 text-xs font-bold uppercase text-primary">
-                      {foundRun.status}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                    <div className="flex items-center gap-2 text-secondary">
-                      <MapPin className="h-4 w-4 text-primary" />
-                      <span className="font-semibold">{foundRun.location}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-secondary">
-                      <CalendarIcon className="h-4 w-4 text-primary" />
-                      <span className="font-semibold">
-                        {new Date(foundRun.date).toLocaleString()}
-                      </span>
-                    </div>
-                    {foundRun.numOfPlayers !== undefined && (
-                      <div className="flex items-center gap-2 text-secondary sm:col-span-2">
-                        <Users className="h-4 w-4 text-primary" />
-                        <span className="font-semibold">
-                          {foundRun.joinedCount} / {foundRun.numOfPlayers} players
-                        </span>
-                        {slotsLeft !== null && (
-                          <span className="ml-auto rounded-full bg-secondary/10 border border-secondary/30 px-2 py-0.5 text-xs font-bold uppercase text-secondary">
-                            {slotsLeft} slots left
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  <Button
-                    type="button"
-                    onClick={handleJoin}
-                    disabled={joining || foundRun.status !== "open"}
-                    size="lg"
-                    className="w-full bg-gradient-hero hover:opacity-90 text-primary-foreground font-bold shadow-glow"
-                  >
-                    <CheckCircle2 className="h-4 w-4 mr-1" />
-                    {joining
-                      ? "Joining..."
-                      : foundRun.status === "open"
-                        ? "Confirm & Join"
-                        : `Run is ${foundRun.status}`}
-                  </Button>
-                </div>
-              )}
             </form>
           </div>
         </Card>
@@ -242,6 +251,17 @@ const JoinRun = () => {
             Host a run or ask the host for the code
           </button>
         </p>
+
+        {/* Join Run Confirmation Modal */}
+        <JoinRunConfirmationModal
+          run={foundRun}
+          isOpen={showModal}
+          onClose={() => setShowModal(false)}
+          onConfirm={handleJoin}
+          isJoining={joining}
+          currentUserId={currentUser.id}
+          joinCode={joinCode}
+        />
       </div>
     </div>
   );

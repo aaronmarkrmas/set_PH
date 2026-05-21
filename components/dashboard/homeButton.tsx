@@ -19,6 +19,13 @@ export default function HomeView({ setView }: HomeViewProps) {
   const { showConfirm, openConfirm, closeConfirm, confirmComplete } = useCompleteRun();
   const router = useRouter();
 
+  // Filter runs to show only ones where user is a participant (host or joiner)
+  const userRuns = runs.filter((run) => {
+    const isHost = run.hostId === user?._id;
+    const isJoiner = run.participants?.some((p: any) => p.userId?.toString() === user?._id);
+    return isHost || isJoiner;
+  });
+
   return (
     <>
       {/* Current Runs */}
@@ -29,9 +36,9 @@ export default function HomeView({ setView }: HomeViewProps) {
           </h3>
         </div>
 
-        {runs.length > 0 ? (
+        {userRuns.length > 0 ? (
           <div className="grid gap-4">
-            {runs.map((run) => (
+            {userRuns.map((run) => (
               <Card key={run._id} className="p-1 bg-gradient-hero shadow-deep border-0 animate-pulse-glow">
                 <div className="rounded-lg bg-background p-6 flex flex-col md:flex-row md:items-center gap-4 md:gap-6">
                   <div className="flex-1 space-y-3">
@@ -94,13 +101,15 @@ export default function HomeView({ setView }: HomeViewProps) {
                     </div>
                     
                   </div>
-                  <Button
+                  {run?.hostId === user?._id && (
+                    <Button
                       size="lg"
                       className="bg-gradient-hero hover:opacity-90 text-primary-foreground font-bold shadow-glow mt-auto"
                       onClick={() => openConfirm(run._id)}
                     >
                       Complete run 
                     </Button>
+                  )}
                 </div>
               </Card>
             ))}
