@@ -28,7 +28,7 @@ const Index = () => {
       toast.error("Enter a run code to join");
       return;
     }
-    toast.success(`Joining run ${code.toUpperCase()}...`);
+    router.push(`/join?code=${code.toUpperCase()}`);
   };
 
   const handleSignIn = async () => {
