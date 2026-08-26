@@ -5,12 +5,13 @@ import { NextResponse } from "next/server";
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
 
-    const run = await Run.findById(params.id);
+    const { id } = await params;
+    const run = await Run.findById(id);
 
     if (!run) {
       return NextResponse.json({ error: "Run not found" }, { status: 404 });
@@ -25,17 +26,18 @@ export async function GET(
 
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
 
+    const { id } = await params;
     const body = await req.json();
 
     const updatedRun = await Run.findByIdAndUpdate(
-      params.id,
+      id,
       body,
-      { new: true }
+      { returnDocument: "after" }
     );
 
     return NextResponse.json(updatedRun);

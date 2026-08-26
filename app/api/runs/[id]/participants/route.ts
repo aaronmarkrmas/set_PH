@@ -24,3 +24,37 @@ export async function GET(req: Request) {
     );
   }
 }
+
+export async function POST(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    await connectDB();
+
+    const { id: runId } = await params;
+    const { userId, name, status } = await req.json();
+
+    if (!name || !status) {
+      return NextResponse.json(
+        { error: "Name and status are required" },
+        { status: 400 }
+      );
+    }
+
+    const participant = await Join.create({
+      runId,
+      userId: userId || null,
+      name,
+      status,
+    });
+
+    return NextResponse.json(participant, { status: 201 });
+
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Failed to add participant" },
+      { status: 500 }
+    );
+  }
+}

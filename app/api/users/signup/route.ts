@@ -1,7 +1,10 @@
 import { connectDB } from "@/lib/mongodb";
 import User from "@/models/user";
+import PendingUser from "@/models/pendingUser";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { NextResponse } from "next/server";
+import { sendOTPEmail } from "@/lib/brevo";
 
 export async function POST(req: Request) {
   try {
@@ -16,7 +19,12 @@ export async function POST(req: Request) {
       );
     }
 
-    const existingUser = await User.findOne({ email });
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // Check if a verified account already exists
+    const existingUser = await User.findOne({
+      email: normalizedEmail,
+    });
 
     if (existingUser) {
       return NextResponse.json(
@@ -25,30 +33,59 @@ export async function POST(req: Request) {
       );
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Generate OTP
+    const otp = crypto
+      .randomInt(100000, 1000000)
+      .toString();
 
-    const user = await User.create({
-      name,
-      email,
-      password: hashedPassword,
+    const otpExpiresAt = new Date(
+      Date.now() + 10 * 60 * 1000
+    );
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(
+      password,
+      10
+    );
+
+    // Hash OTP
+    const hashedOtp = await bcrypt.hash(
+      otp,
+      10
+    );
+
+    // Remove any previous pending registration
+    await PendingUser.deleteOne({
+      email: normalizedEmail,
     });
 
-    return NextResponse.json({ message: "User created", user });
-  } catch (error) {
-    if (
-      typeof error === "object" &&
-      error !== null &&
-      "code" in error &&
-      (error as { code?: number }).code === 11000
-    ) {
-      const key = (error as { keyPattern?: Record<string, number> }).keyPattern;
-      const duplicateField = key ? Object.keys(key)[0] : "field";
+    // Store as pending ONLY
+    await PendingUser.create({
+      name: name.trim(),
+      email: normalizedEmail,
+      password: hashedPassword,
+      hashedOtp,
+      otpExpiresAt,
+      otpLastSentAt: new Date(),
 
-      return NextResponse.json(
-        { error: `${duplicateField} already exists` },
-        { status: 409 }
-      );
-    }
+    });
+
+    // Send OTP
+    await sendOTPEmail(
+      normalizedEmail,
+      otp
+    );
+
+    return NextResponse.json(
+      {
+        message: "OTP sent to your email.",
+        email: normalizedEmail,
+      },
+      { status: 201 }
+    );
+
+  } catch (error) {
+    console.error("Signup error:", error);
 
     return NextResponse.json(
       { error: "Signup failed" },

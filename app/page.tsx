@@ -11,6 +11,9 @@ import { toast } from "sonner";
 import { signupUser } from "@/lib/api/users";
 import { signinUser } from "@/lib/api/users";
 import { useRouter } from "next/navigation";
+import { PinVerifyModal } from "@/components/dashboard/verifyPin";
+import { verifyOtp } from "@/lib/api/users";
+import { resendOtp } from "@/lib/api/users";
 
 const Index = () => {
   const [code, setCode] = useState("");
@@ -21,6 +24,10 @@ const Index = () => {
   const [signinPassword, setSigninPassword] = useState("");
   const [isSigningUp, setIsSigningUp] = useState(false);
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [verifyOpen, setVerifyOpen] = useState(false);
+  const [pendingVerifyEmail, setPendingVerifyEmail] = useState("");
+  
+  
   const router = useRouter();
 
   const handleQuickJoin = () => {
@@ -28,7 +35,7 @@ const Index = () => {
       toast.error("Enter a run code to join");
       return;
     }
-    toast.success(`Joining run ${code.toUpperCase()}...`);
+    router.push(`/join?code=${code.toUpperCase()}`);
   };
 
   const handleSignIn = async () => {
@@ -95,7 +102,10 @@ const Index = () => {
         return;
       }
 
+      setVerifyOpen(true);          
       toast.success("Welcome to SetPH! Time to ball.");
+      const emailForVerification = signupEmail; 
+      setPendingVerifyEmail(emailForVerification); 
       setSignupName("");
       setSignupEmail("");
       setSignupPassword("");
@@ -106,6 +116,68 @@ const Index = () => {
     }
   };
 
+    const handleVerifyOtp = async (pin: string) => {
+    const { ok, data } = await verifyOtp(
+      pendingVerifyEmail,
+      pin
+    );
+
+    if (!ok) {
+      throw new Error(
+        "error" in data && data.error
+          ? data.error
+          : "Invalid OTP"
+      );
+    }
+
+    toast.success("Email verified successfully!");
+
+    setVerifyOpen(false);
+    router.push("/");
+  };
+
+  const handleResendOtp = async (): Promise<number | null> => {
+  try {
+    const { ok, data } = await resendOtp(
+      pendingVerifyEmail
+    );
+
+    if (!ok) {
+      if (
+        "remainingSeconds" in data &&
+        typeof data.remainingSeconds === "number"
+      ) {
+        toast.error(
+          `Please wait ${data.remainingSeconds} seconds before requesting another PIN.`
+        );
+
+        return data.remainingSeconds;
+      }
+
+      toast.error(
+        "error" in data && data.error
+          ? data.error
+          : "Failed to resend OTP"
+      );
+
+      return null;
+    }
+
+    toast.success(
+      "A new PIN has been sent to your email."
+    );
+
+    // Server tells us the new cooldown
+    return data.remainingSeconds ?? 120;
+
+  } catch (error) {
+    console.error("Resend OTP error:", error);
+    toast.error("Failed to resend OTP");
+
+    return null;
+    }
+  };
+  
   return (
     <div className="min-h-screen bg-gradient-soft overflow-hidden relative">
       <div className="pointer-events-none absolute -top-32 -left-32 h-96 w-96 rounded-full bg-primary/30 blur-3xl animate-float" />
@@ -132,7 +204,7 @@ const Index = () => {
           </div>
 
           <h1 className="text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black leading-[0.95] tracking-tight text-secondary">
-            Run with your <span className="text-gradient">squad</span> tonight.
+            Run with your <span className="text-gradient">squad!</span>.
           </h1>
 
           <p className="text-lg md:text-xl text-muted-foreground max-w-lg leading-relaxed">
@@ -248,7 +320,9 @@ const Index = () => {
                   />
                 </div>
                 <Button
-                  onClick={handleSignIn}
+                  onClick={() => {
+                    handleSignIn();
+                  }}
                   disabled={isSigningIn}
                   className="w-full h-12 bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold text-base"
                 >
@@ -259,8 +333,16 @@ const Index = () => {
           </Card>
         </section>
       </main>
+      <PinVerifyModal
+        open={verifyOpen}
+        onOpenChange={setVerifyOpen}
+        email={pendingVerifyEmail}
+        onVerify={handleVerifyOtp}
+        onResend={handleResendOtp}
+      />
+
     </div>
   );
-};
+};  
 
 export default Index;
