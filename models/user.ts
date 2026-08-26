@@ -10,7 +10,7 @@ const UserSchema = new mongoose.Schema({
   height: { type: Number, required: false },
   weight: { type: Number, required: false },
   password: { type: String, required: true },
-  role: { type: String, enum: ["host", "joiner"], default: "joiner" },
+  role: { type: String, enum: ["host", "joiner"], default: "joiner"}
 }, { timestamps: true });
 
 export default mongoose.models.User || mongoose.model("User", UserSchema);

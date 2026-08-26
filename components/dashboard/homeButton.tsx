@@ -106,7 +106,7 @@ export default function HomeView({ setView }: HomeViewProps) {
                           </p>
                           <Button
                             size="sm"
-                            className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-glow"
+                            className="bg-gradient-hero hover:opacity-90 text-primary-foreground font-bold shadow-glow"
                             onClick={() => {
                               setSelectedRun(run);
                               setShowRequests(true);

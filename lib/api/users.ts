@@ -62,3 +62,42 @@ export async function signinUser(payload: SigninPayload) {
     data,
   };
 }
+
+export async function verifyOtp(email: string, otp: string) {
+  const response = await fetch("api/users/verify-otp", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      email,
+      otp,
+    }),
+  });
+
+  const data = await response.json();
+
+  return {
+    ok: response.ok,
+    data,
+  };
+}
+
+export async function resendOtp(email: string) {
+  const response = await fetch("api/users/resend-otp", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      email,
+    }),
+  });
+
+  const data = await response.json();
+
+  return {
+    ok: response.ok,
+    data,
+  };
+}
